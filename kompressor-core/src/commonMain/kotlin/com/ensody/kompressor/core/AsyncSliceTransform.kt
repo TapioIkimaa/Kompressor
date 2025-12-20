@@ -1,7 +1,8 @@
 package com.ensody.kompressor.core
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.invoke
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 /**
  * An asynchronous data [SliceTransform], using a `suspend` [transform] function.
@@ -52,9 +53,12 @@ public suspend fun AsyncSliceTransform.transform(input: ByteArray): ByteArray {
     return outputSlices.getOutput()
 }
 
-private class AsyncSliceTransformConverter(private val transform: SliceTransform) : AsyncSliceTransform {
+private class AsyncSliceTransformConverter(
+    private val transform: SliceTransform,
+    private val dispatcher: CoroutineContext = Dispatchers.Default,
+) : AsyncSliceTransform {
     override suspend fun transform(input: ByteArraySlice, output: ByteArraySlice, finish: Boolean) {
-        Dispatchers.Default {
+        withContext(dispatcher) {
             transform.transform(input, output, finish)
         }
     }

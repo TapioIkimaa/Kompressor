@@ -82,6 +82,16 @@ ZstdDecompressor().pipe(sink).buffered().use { decompressor ->
 }
 ```
 
+## Example: zstd with Ktor
+
+```kotlin
+val client = HttpClient(CIO) {
+    install(ContentEncoding) {
+        customEncoder(ZstdContentEncoder(compressionLevel = 1), 1.0f)
+    }
+}
+```
+
 ## License
 
 ```

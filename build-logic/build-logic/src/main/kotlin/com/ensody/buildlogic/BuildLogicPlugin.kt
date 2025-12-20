@@ -55,7 +55,7 @@ fun Project.setupBuildLogic(block: Project.() -> Unit) {
         }
         if (extensions.findByType<KotlinMultiplatformExtension>() != null) {
             setupKmp {
-                if (project.name.endsWith("--nativelib")) {
+                if (project.name.endsWith("--nativelib") || project.name.endsWith("-ktor")) {
                     addAllNonJsTargets()
                 } else {
                     addAllTargets()
