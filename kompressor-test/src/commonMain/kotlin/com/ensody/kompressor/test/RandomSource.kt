@@ -23,9 +23,9 @@ public class RandomSource(private val random: Random, private val maxBytes: Long
         if (maxBytes == 0L) return -1
 
         val result = UnsafeBufferOperations.writeToTail(sink, 1) { bytes, start, endExclusive ->
-            val end = min(endExclusive, (start + maxBytes).toInt())
-            random.nextBytes(bytes, start, end)
-            end - start
+            val end = min(endExclusive.toLong(), start.toLong() + maxBytes)
+            random.nextBytes(bytes, start, end.toInt())
+            (end - start).toInt()
         }
         generated += result
         return generated

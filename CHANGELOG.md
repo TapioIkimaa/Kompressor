@@ -1,5 +1,9 @@
 # Changelog
 
+## Next release (0.3.0)
+
+* Added zlib support (gzip & deflate).
+
 ## 0.2.0
 
 * Added Ktor integration.

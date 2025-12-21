@@ -36,8 +36,8 @@ public interface AsyncSliceTransform {
 /**
  * Converts a [SliceTransform] into an [AsyncSliceTransform].
  */
-public fun SliceTransform.toAsync(): AsyncSliceTransform =
-    AsyncSliceTransformConverter(this)
+public fun SliceTransform.toAsync(dispatcher: CoroutineContext = Dispatchers.Default): AsyncSliceTransform =
+    AsyncSliceTransformConverter(this, dispatcher)
 
 /** Transforms the whole [input] and returns the full transformed result. */
 public suspend fun AsyncSliceTransform.transform(input: ByteArray): ByteArray {
@@ -55,7 +55,7 @@ public suspend fun AsyncSliceTransform.transform(input: ByteArray): ByteArray {
 
 private class AsyncSliceTransformConverter(
     private val transform: SliceTransform,
-    private val dispatcher: CoroutineContext = Dispatchers.Default,
+    private val dispatcher: CoroutineContext,
 ) : AsyncSliceTransform {
     override suspend fun transform(input: ByteArraySlice, output: ByteArraySlice, finish: Boolean) {
         withContext(dispatcher) {
