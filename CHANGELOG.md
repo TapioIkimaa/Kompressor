@@ -1,6 +1,6 @@
 # Changelog
 
-## Next release (0.3.0)
+## 0.3.0
 
 * Added zlib support (gzip & deflate).
 

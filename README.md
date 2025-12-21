@@ -31,6 +31,15 @@ dependencies {
     api("com.ensody.kompressor:kompressor-zstd--nativelib")
     // Select the native zstd library version from NativeBuilds
     api("com.ensody.nativebuilds:zstd-libzstd:1.5.7.4")
+    // ZstdContentEncoder for Ktor (optional)
+    api("com.ensody.kompressor:kompressor-zstd-ktor")
+
+    // zlib (deflate & gzip)
+    api("com.ensody.kompressor:kompressor-zlib--nativelib")
+    // Select the native zlib library version from NativeBuilds
+    api("com.ensody.nativebuilds:zlib-libz:1.3.1.4")
+    // DeflateContentEncoder and GzipContentEncoder for Ktor (optional)
+    api("com.ensody.kompressor:kompressor-zlib-ktor")
 }
 ```
 
