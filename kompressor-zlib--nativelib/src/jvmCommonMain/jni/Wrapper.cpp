@@ -16,7 +16,7 @@ Java_com_ensody_kompressor_zlib_ZlibWrapper_createCompressor(
         jint memLevel,
         jint strategy
 ) {
-    auto stream = new z_stream;
+    auto stream = new z_stream();
     auto result = deflateInit2(stream, level, Z_DEFLATED, windowBits, memLevel, strategy);
     if (result != Z_OK) {
         delete stream;
@@ -87,7 +87,7 @@ Java_com_ensody_kompressor_zlib_ZlibWrapper_createDecompressor(
         jobject type,
         jint windowBits
 ) {
-    auto stream = new z_stream;
+    auto stream = new z_stream();
     auto result = inflateInit2(stream, windowBits);
     if (result != Z_OK) {
         delete stream;

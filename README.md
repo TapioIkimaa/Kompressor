@@ -15,7 +15,8 @@ The underlying native libraries are provided by the [NativeBuilds](https://githu
 ## Supported algorithms
 
 * zstd/ZStandard
-* deflate & gzip
+* deflate (zlib & raw)
+* gzip
 * ...more planned... (lz4, snappy, brotli, bzip2, bzip3)
 
 ## Installation

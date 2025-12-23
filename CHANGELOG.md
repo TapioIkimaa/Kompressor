@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+* Ensure zlib streams a zero-initialized.
+
 ## 0.3.0
 
 * Added zlib support (gzip & deflate).
