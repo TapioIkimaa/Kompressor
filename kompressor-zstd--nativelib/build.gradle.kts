@@ -1,10 +1,13 @@
+import com.android.build.gradle.BaseExtension
 import com.ensody.buildlogic.setupBuildLogic
 import com.ensody.buildlogic.shell
 import com.ensody.nativebuilds.addJvmNativeBuilds
 import com.ensody.nativebuilds.cinterops
+import org.gradle.kotlin.dsl.findByType
+import kotlin.apply
 
 plugins {
-    id("com.ensody.build-logic.android")
+    id("com.ensody.build-logic.conditionalandroid")
     id("com.ensody.build-logic.kmp")
     id("com.ensody.build-logic.publish")
     id("com.ensody.nativebuilds")
@@ -34,20 +37,6 @@ setupBuildLogic {
         libs.nativebuilds.zstd.core,
     )
 
-    android {
-        externalNativeBuild {
-            cmake {
-                path = file("src/androidMain/CMakeLists.txt")
-            }
-        }
-        // Android unit tests run on the host, so integrate the native shared libs for the host system
-        sourceSets {
-            named("test") {
-                resources.srcDir(file("build/nativebuilds-desktop"))
-            }
-        }
-    }
-
     tasks.register("assembleZigJni") {
         dependsOn("unzipNativeBuilds")
         inputs.file("src/jvmMain/build.zig")
@@ -70,8 +59,22 @@ setupBuildLogic {
         dependsOn("assembleZigJni")
     }
 
-    // Needed for Android unit tests to access the native shared libs for the host system
-    tasks.named("preBuild") {
-        dependsOn("assembleZigJni")
+    extensions.findByType<BaseExtension>()?.apply {
+        externalNativeBuild {
+            cmake {
+                path = file("src/androidMain/CMakeLists.txt")
+            }
+        }
+        // Android unit tests run on the host, so integrate the native shared libs for the host system
+        sourceSets {
+            named("test") {
+                resources.srcDir(file("build/nativebuilds-desktop"))
+            }
+        }
+
+        // Needed for Android unit tests to access the native shared libs for the host system
+        tasks.named("preBuild") {
+            dependsOn("assembleZigJni")
+        }
     }
 }

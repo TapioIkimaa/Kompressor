@@ -1,15 +1,22 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) !void {
     // The Windows builds create a .lib file in the lib/ directory which we don't need.
     const deleteLib = b.addRemoveDirTree(.{ .cwd_relative = b.getInstallPath(.prefix, "lib") });
     b.getInstallStep().dependOn(&deleteLib.step);
 
-    try setupTarget(b, &deleteLib.step, .linux, .aarch64, "linuxArm64");
-    try setupTarget(b, &deleteLib.step, .linux, .x86_64, "linuxX64");
-    try setupTarget(b, &deleteLib.step, .macos, .aarch64, "macosArm64");
-    try setupTarget(b, &deleteLib.step, .macos, .x86_64, "macosX64");
-    try setupTarget(b, &deleteLib.step, .windows, .x86_64, "mingwX64");
+    if (builtin.os.tag == .linux or builtin.os.tag == .macos) {
+        try setupTarget(b, &deleteLib.step, .linux, .aarch64, "linuxArm64");
+        try setupTarget(b, &deleteLib.step, .linux, .x86_64, "linuxX64");
+    }
+    if (builtin.os.tag == .macos) {
+        try setupTarget(b, &deleteLib.step, .macos, .aarch64, "macosArm64");
+        try setupTarget(b, &deleteLib.step, .macos, .x86_64, "macosX64");
+    }
+    if (builtin.os.tag == .windows or builtin.os.tag == .macos) {
+        try setupTarget(b, &deleteLib.step, .windows, .x86_64, "mingwX64");
+    }
 }
 
 fn setupTarget(b: *std.Build, step: *std.Build.Step, comptime tag: std.Target.Os.Tag, comptime arch: std.Target.Cpu.Arch, comptime kmpTarget: []const u8) !void {
@@ -31,7 +38,7 @@ fn setupTarget(b: *std.Build, step: *std.Build.Step, comptime tag: std.Target.Os
         else => "unix",
     }));
     lib.root_module.addIncludePath(b.path("../../../jni/common/include"));
-    lib.root_module.addIncludePath(b.path("../../build/nativebuilds/zlib-headers-iosarm64/include"));
+    lib.root_module.addIncludePath(b.path("../../build/nativebuilds/zlib-headers-" ++ (comptime toLowerComptime(kmpTarget)) ++ "/include"));
 
     lib.root_module.link_libc = true;
     lib.root_module.link_libcpp = true;
@@ -60,4 +67,14 @@ fn setupTarget(b: *std.Build, step: *std.Build.Step, comptime tag: std.Target.Os
     });
 
     step.dependOn(&install.step);
+}
+
+fn toLowerComptime(comptime s: []const u8) []const u8 {
+    comptime var buf: [s.len]u8 = undefined;
+
+    inline for (s, 0..) |c, i| {
+        buf[i] = std.ascii.toLower(c);
+    }
+
+    return &buf;
 }

@@ -26,6 +26,16 @@ class BaseBuildLogicPlugin : Plugin<Project> {
     override fun apply(target: Project) {}
 }
 
+class ConditionalAndroidBuildLogicPlugin : Plugin<Project> {
+    override fun apply(target: Project) {
+        target.run {
+            if (OS.current == OS.macOS) {
+                pluginManager.apply("com.ensody.build-logic.android")
+            }
+        }
+    }
+}
+
 fun Project.initBuildLogic() {
     group = "com.ensody.kompressor"
 
@@ -55,10 +65,23 @@ fun Project.setupBuildLogic(block: Project.() -> Unit) {
         }
         if (extensions.findByType<KotlinMultiplatformExtension>() != null) {
             setupKmp {
-                if (project.name.endsWith("--nativelib") || project.name.endsWith("-ktor")) {
-                    addAllNonJsTargets()
-                } else {
-                    addAllTargets()
+                when (OS.current) {
+                    OS.Linux -> {
+                        jvm()
+                        linuxArm64()
+                        linuxX64()
+                    }
+                    OS.Windows -> {
+                        jvm()
+                        mingwX64()
+                    }
+                    OS.macOS -> {
+                        if (project.name.endsWith("--nativelib") || project.name.endsWith("-ktor")) {
+                            addAllNonJsTargets()
+                        } else {
+                            addAllTargets()
+                        }
+                    }
                 }
                 compilerOptions {
                     optIn.add("kotlinx.coroutines.ExperimentalCoroutinesApi")
@@ -73,16 +96,37 @@ fun Project.setupBuildLogic(block: Project.() -> Unit) {
             }
             tasks.register("testAll") {
                 group = "verification"
-                dependsOn(
-                    "testDebugUnitTest",
-                    "jvmTest",
-                    "iosSimulatorArm64Test",
-                    "iosX64Test",
-                    "macosArm64Test",
-                    "macosX64Test",
-                    "mingwX64Test",
-                    "linuxX64Test",
-                )
+                when (OS.current) {
+                    OS.Linux -> {
+                        when (CpuArch.current) {
+                            CpuArch.aarch64 -> {
+                                dependsOn(
+                                    "linuxArm64Test",
+                                )
+                            }
+                            CpuArch.x64 -> {
+                                dependsOn(
+                                    "linuxX64Test",
+                                )
+                            }
+                        }
+                    }
+                    OS.macOS -> {
+                        dependsOn(
+                            "testDebugUnitTest",
+                            "jvmTest",
+                            "iosSimulatorArm64Test",
+                            "iosX64Test",
+                            "macosArm64Test",
+                            "macosX64Test",
+                        )
+                    }
+                    OS.Windows -> {
+                        dependsOn(
+                            "mingwX64Test",
+                        )
+                    }
+                }
             }
         }
         if (extensions.findByType<KotlinBaseExtension>() != null) {

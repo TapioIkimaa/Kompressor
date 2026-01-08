@@ -11,9 +11,41 @@ on:
   pull_request:
 
 jobs:
+  platforms:
+    name: Build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: mlugg/setup-zig@fa65c4058643678a4e4a9a60513944a7d8d35440 # v2.1.0
+        with:
+          version: 0.15.2
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v5
+      - name: Install JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "gradle"
+          check-latest: true
+      - name: Configure Gradle
+        run:
+          ./gradlew help
+          ./gradlew --version
+      - name: Build project
+        run: ./gradlew assemble --stacktrace
+      - name: Run tests
+        run: ./gradlew testAll --stacktrace
+
   build:
     name: Build and test
     runs-on: macos-latest
+    needs:
+      - platforms
     steps:
       - name: Checkout
         uses: actions/checkout@v6
