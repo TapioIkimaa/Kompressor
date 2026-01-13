@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+* Fixed JVM Linux builds
+* Fixed zlib loading in JVM on Windows
+
 ## 0.4.0
 
 * Added Brotli support
