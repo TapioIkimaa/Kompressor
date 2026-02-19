@@ -55,7 +55,11 @@ fun Project.setupRepositories() {
     }
 }
 
-fun Project.setupBuildLogic(block: Project.() -> Unit) {
+fun Project.setupBuildLogic(
+    includeDefaultTargets: Boolean = true,
+    excludeJs: Boolean = false,
+    block: Project.() -> Unit,
+) {
     setupBuildLogicBase {
         setupRepositories()
         if (extensions.findByType<JavaPlatformExtension>() != null) {
@@ -66,24 +70,26 @@ fun Project.setupBuildLogic(block: Project.() -> Unit) {
         }
         if (extensions.findByType<KotlinMultiplatformExtension>() != null) {
             setupKmp {
-                when (OS.current) {
-                    OS.Linux -> {
-                        androidTarget()
-                        jvm()
-                        linuxArm64()
-                        linuxX64()
-                    }
+                if (!excludeJs) {
+                    allJs()
+                }
 
-                    OS.Windows -> {
-                        jvm()
-                        mingwX64()
-                    }
+                if (includeDefaultTargets) {
+                    when (OS.current) {
+                        OS.Linux -> {
+                            androidTarget()
+                            jvm()
+                            linuxArm64()
+                            linuxX64()
+                        }
 
-                    OS.macOS -> {
-                        if (project.name.endsWith("--nativelib") || project.name.endsWith("-ktor")) {
+                        OS.Windows -> {
+                            jvm()
+                            mingwX64()
+                        }
+
+                        OS.macOS -> {
                             addAllNonJsTargets()
-                        } else {
-                            addAllTargets()
                         }
                     }
                 }
@@ -101,45 +107,52 @@ fun Project.setupBuildLogic(block: Project.() -> Unit) {
                     optIn.add("kotlinx.coroutines.FlowPreview")
                 }
 
-                sourceSets["jvmCommonTest"].dependencies {
-                    implementation(rootLibs.findLibrary("kotlin-test-junit").get())
-                    implementation(rootLibs.findLibrary("junit").get())
+                if (includeDefaultTargets) {
+                    sourceSets["jvmCommonTest"].dependencies {
+                        implementation(rootLibs.findLibrary("kotlin-test-junit").get())
+                        implementation(rootLibs.findLibrary("junit").get())
+                    }
                 }
             }
             tasks.register("testAll") {
                 group = "verification"
-                dependsOn("jvmTest")
-                when (OS.current) {
-                    OS.Linux -> {
-                        when (CpuArch.current) {
-                            CpuArch.aarch64 -> {
-                                dependsOn(
-                                    "linuxArm64Test",
-                                )
-                            }
+                if (includeDefaultTargets) {
+                    dependsOn("jvmTest")
+                    if (!excludeJs) {
+                        dependsOn("jsTest", "wasmJsTest")
+                    }
+                    when (OS.current) {
+                        OS.Linux -> {
+                            when (CpuArch.current) {
+                                CpuArch.aarch64 -> {
+                                    dependsOn(
+                                        "linuxArm64Test",
+                                    )
+                                }
 
-                            CpuArch.x64 -> {
-                                dependsOn(
-                                    "linuxX64Test",
-                                )
+                                CpuArch.x64 -> {
+                                    dependsOn(
+                                        "linuxX64Test",
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    OS.macOS -> {
-                        dependsOn(
-                            "testDebugUnitTest",
-                            "iosSimulatorArm64Test",
-                            "iosX64Test",
-                            "macosArm64Test",
-                            "macosX64Test",
-                        )
-                    }
+                        OS.macOS -> {
+                            dependsOn(
+                                "testDebugUnitTest",
+                                "iosSimulatorArm64Test",
+                                "iosX64Test",
+                                "macosArm64Test",
+                                "macosX64Test",
+                            )
+                        }
 
-                    OS.Windows -> {
-                        dependsOn(
-                            "mingwX64Test",
-                        )
+                        OS.Windows -> {
+                            dependsOn(
+                                "mingwX64Test",
+                            )
+                        }
                     }
                 }
             }
