@@ -3,7 +3,10 @@
 package com.ensody.buildlogic
 
 import com.android.build.gradle.BaseExtension
+import com.vanniktech.maven.publish.DeploymentValidation
+import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import com.vanniktech.maven.publish.SourcesJar
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -176,8 +179,12 @@ fun Project.setupBuildLogic(
             setupGradlePlugin(rootLibs.findVersion("kotlinForGradlePlugins").get().toString())
         }
         extensions.findByType<MavenPublishBaseExtension>()?.apply {
-            configureBasedOnAppliedPlugins(sourcesJar = true, javadocJar = System.getenv("RUNNING_ON_CI") == "true")
-            publishToMavenCentral(automaticRelease = true, validateDeployment = false)
+            if (System.getenv("RUNNING_ON_CI") == "true") {
+                configureBasedOnAppliedPlugins()
+            } else {
+                configureBasedOnAppliedPlugins(javadocJar = JavadocJar.None())
+            }
+            publishToMavenCentral(automaticRelease = true, validateDeployment = DeploymentValidation.NONE)
             if (System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey")?.isNotBlank() == true) {
                 signAllPublications()
             }
