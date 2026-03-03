@@ -30,7 +30,9 @@ internal class BrotliDecompressorImpl : SliceTransform {
             error("Bad Brotli result code: $result")
         }
         input.insufficient = result == BrotliDecoderResult.BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT.value
-        output.insufficient =
-            input.hasData || (finish && result != BrotliDecoderResult.BROTLI_DECODER_RESULT_SUCCESS.value)
+        output.insufficient = result == BrotliDecoderResult.BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT.value
+        if (finish && input.insufficient && !input.hasData) {
+            error("Brotli stream truncated")
+        }
     }
 }

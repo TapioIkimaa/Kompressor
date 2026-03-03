@@ -73,8 +73,11 @@ internal class BrotliDecompressorImpl : SliceTransform {
                 }
                 input.insufficient =
                     result == BrotliDecoderResult.BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT.value.convert<UInt>()
-                output.insufficient = input.hasData ||
-                    (finish && result != BrotliDecoderResult.BROTLI_DECODER_RESULT_SUCCESS.value.convert<UInt>())
+                output.insufficient =
+                    result == BrotliDecoderResult.BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT.value.convert<UInt>()
+                if (finish && input.insufficient && !input.hasData) {
+                    error("Brotli stream truncated")
+                }
             }
         }
     }

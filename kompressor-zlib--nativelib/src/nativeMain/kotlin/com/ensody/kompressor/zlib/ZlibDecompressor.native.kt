@@ -63,7 +63,12 @@ internal class ZlibDecompressorImpl(windowBits: Int) : SliceTransform {
                 input.readStart += input.remainingRead - stream.avail_in.toInt()
                 output.writeStart += output.remainingWrite - stream.avail_out.toInt()
                 checkErrorResult(result)
-                output.insufficient = input.hasData || (finish && result != Z_STREAM_END)
+                val isOkOrBufError = result == Z_OK || result == platform.zlib.Z_BUF_ERROR
+                input.insufficient = isOkOrBufError && !input.hasData
+                output.insufficient = isOkOrBufError && output.isFull
+                if (finish && result != Z_STREAM_END && !output.insufficient) {
+                    error("Zlib stream truncated")
+                }
             }
         }
     }
