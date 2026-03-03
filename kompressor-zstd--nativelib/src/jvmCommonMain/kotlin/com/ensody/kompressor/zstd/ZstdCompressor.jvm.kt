@@ -7,6 +7,22 @@ import com.ensody.kompressor.core.createCleaner
 public actual fun ZstdCompressor(compressionLevel: Int, dictionary: ByteArray?): SliceTransform =
     ZstdCompressorImpl(compressionLevel = compressionLevel, dictionary = dictionary)
 
+public actual fun trainZstdDictionary(samples: List<ByteArray>, dictSize: Int): ByteArray {
+    val totalSize = samples.sumOf { it.size }
+    val samplesBuffer = ByteArray(totalSize)
+    val sampleSizes = IntArray(samples.size)
+    var offset = 0
+    for ((index, sample) in samples.withIndex()) {
+        sample.copyInto(samplesBuffer, destinationOffset = offset)
+        sampleSizes[index] = sample.size
+        offset += sample.size
+    }
+    val dictBuffer = ByteArray(dictSize)
+    val result = ZstdWrapper.trainDictionary(samplesBuffer, sampleSizes, dictBuffer)
+    checkErrorResult(result)
+    return dictBuffer.copyOf(result.toInt())
+}
+
 internal class ZstdCompressorImpl(
     private val compressionLevel: Int = 3,
     private val dictionary: ByteArray? = null,

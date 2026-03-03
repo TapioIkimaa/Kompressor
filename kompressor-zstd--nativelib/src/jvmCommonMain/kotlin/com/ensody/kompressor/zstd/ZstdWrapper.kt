@@ -32,6 +32,8 @@ internal object ZstdWrapper : NativeBuildsJvmLib {
     external fun loadCompressorDictionary(cctx: Long, dictionary: ByteArray): Long
     external fun loadDecompressorDictionary(dctx: Long, dictionary: ByteArray): Long
 
+    external fun trainDictionary(samples: ByteArray, sampleSizes: IntArray, dictBuffer: ByteArray): Long
+
     external fun compressStream(
         cctx: Long,
         input: ByteArraySlice,

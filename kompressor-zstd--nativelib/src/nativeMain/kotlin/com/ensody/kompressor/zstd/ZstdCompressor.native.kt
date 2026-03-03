@@ -2,6 +2,7 @@ package com.ensody.kompressor.zstd
 
 import com.ensody.kompressor.core.ByteArraySlice
 import com.ensody.kompressor.core.SliceTransform
+import com.ensody.kompressor.internal.zstd.ZDICT_trainFromBuffer
 import com.ensody.kompressor.internal.zstd.ZSTD_CCtx
 import com.ensody.kompressor.internal.zstd.ZSTD_CCtx_loadDictionary
 import com.ensody.kompressor.internal.zstd.ZSTD_CCtx_setParameter
@@ -15,18 +16,56 @@ import com.ensody.kompressor.internal.zstd.ZSTD_inBuffer
 import com.ensody.kompressor.internal.zstd.ZSTD_isError
 import com.ensody.kompressor.internal.zstd.ZSTD_outBuffer
 import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.ULongVar
 import kotlinx.cinterop.UnsafeNumber
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.set
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
 import kotlin.native.ref.createCleaner
 
 public actual fun ZstdCompressor(compressionLevel: Int, dictionary: ByteArray?): SliceTransform =
     ZstdCompressorImpl(compressionLevel = compressionLevel, dictionary = dictionary)
+
+@OptIn(UnsafeNumber::class)
+public actual fun trainZstdDictionary(samples: List<ByteArray>, dictSize: Int): ByteArray {
+    val totalSize = samples.sumOf { it.size }
+    val samplesBuffer = ByteArray(totalSize)
+    val sampleSizes = LongArray(samples.size)
+    var offset = 0
+    for ((index, sample) in samples.withIndex()) {
+        sample.copyInto(samplesBuffer, destinationOffset = offset)
+        sampleSizes[index] = sample.size.toLong()
+        offset += sample.size
+    }
+    val dictBuffer = ByteArray(dictSize)
+    samplesBuffer.usePinned { pinnedSamples ->
+        dictBuffer.usePinned { pinnedDict ->
+            memScoped {
+                val sizes = allocArray<ULongVar>(samples.size)
+                for (i in samples.indices) {
+                    sizes[i] = sampleSizes[i].convert()
+                }
+                val result = ZDICT_trainFromBuffer(
+                    dictBuffer = pinnedDict.addressOf(0),
+                    dictBufferCapacity = dictSize.convert(),
+                    samplesBuffer = pinnedSamples.addressOf(0),
+                    samplesSizes = sizes,
+                    nbSamples = samples.size.convert(),
+                )
+                if (ZSTD_isError(result) != 0U) {
+                    error("Bad zstd result code $result: ${ZSTD_getErrorName(result)?.toKString()}")
+                }
+                return dictBuffer.copyOf(result.toInt())
+            }
+        }
+    }
+}
 
 @OptIn(UnsafeNumber::class)
 internal class ZstdCompressorImpl(

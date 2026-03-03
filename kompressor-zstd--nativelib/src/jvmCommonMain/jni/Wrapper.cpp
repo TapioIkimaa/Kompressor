@@ -1,4 +1,5 @@
 #include <zstd.h>
+#include <zdict.h>
 #include <jni.h>
 #include "DefaultLoad.h"
 #include "SliceClass.h"
@@ -182,6 +183,52 @@ Java_com_ensody_kompressor_zstd_ZstdWrapper_decompressStream(
 
     env->ReleaseByteArrayElements(inputByteArray, inputElements, JNI_ABORT);
     env->ReleaseByteArrayElements(outputByteArray, outputElements, 0);
+
+    return result;
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_ensody_kompressor_zstd_ZstdWrapper_trainDictionary(
+        JNIEnv *env,
+        jobject type,
+        jbyteArray samples,
+        jintArray sampleSizes,
+        jbyteArray dictBuffer
+) {
+    auto samplesElements = env->GetByteArrayElements(samples, NULL);
+    if (samplesElements == NULL) {
+        return -ZSTD_error_GENERIC;
+    }
+    auto sampleSizesElements = env->GetIntArrayElements(sampleSizes, NULL);
+    if (sampleSizesElements == NULL) {
+        env->ReleaseByteArrayElements(samples, samplesElements, JNI_ABORT);
+        return -ZSTD_error_GENERIC;
+    }
+    auto dictBufferElements = env->GetByteArrayElements(dictBuffer, NULL);
+    if (dictBufferElements == NULL) {
+        env->ReleaseIntArrayElements(sampleSizes, sampleSizesElements, JNI_ABORT);
+        env->ReleaseByteArrayElements(samples, samplesElements, JNI_ABORT);
+        return -ZSTD_error_GENERIC;
+    }
+
+    size_t nbSamples = env->GetArrayLength(sampleSizes);
+    size_t *sizes = new size_t[nbSamples];
+    for (size_t i = 0; i < nbSamples; ++i) {
+        sizes[i] = static_cast<size_t>(sampleSizesElements[i]);
+    }
+
+    size_t result = ZDICT_trainFromBuffer(
+            dictBufferElements,
+            env->GetArrayLength(dictBuffer),
+            samplesElements,
+            sizes,
+            static_cast<unsigned>(nbSamples)
+    );
+
+    delete[] sizes;
+    env->ReleaseByteArrayElements(dictBuffer, dictBufferElements, 0);
+    env->ReleaseIntArrayElements(sampleSizes, sampleSizesElements, JNI_ABORT);
+    env->ReleaseByteArrayElements(samples, samplesElements, JNI_ABORT);
 
     return result;
 }

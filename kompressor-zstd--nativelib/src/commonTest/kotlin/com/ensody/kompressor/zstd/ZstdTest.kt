@@ -65,6 +65,21 @@ internal class ZstdTest {
     }
 
     @Test
+    fun dictionaryTraining() {
+        val samples = (0 until 10).map { i ->
+            "zstd dictionary training is very effective for small data. sample number $i. some more repetitive text.".encodeToByteArray()
+        }
+        val dictionary = trainZstdDictionary(samples, 1024)
+        val data = "zstd dictionary training is very effective".encodeToByteArray()
+        val compressed = ZstdCompressor(dictionary = dictionary).transform(data)
+        val decompressed = ZstdDecompressor(dictionary = dictionary).transform(compressed)
+        assertContentEquals(data, decompressed)
+
+        val compressedWithoutDict = ZstdCompressor().transform(data)
+        kotlin.test.assertTrue(compressed.size < compressedWithoutDict.size, "Compressed with trained dict should be smaller")
+    }
+
+    @Test
     fun largeSample() {
         val seed = 42
         val size: Long = 256L * 1024 * 1024 + 3
